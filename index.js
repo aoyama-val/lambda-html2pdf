@@ -6,8 +6,8 @@ const moment = require('moment');
 const path = require('path');
 const pdf = require('html-pdf');
 
-const BUCKET_NAME = 'aoyama.vallab.ninja';  // 生成されたPDFのアップロード先バケット
-const BUCKET_REGION = 'ap-northeast-1';
+const BUCKET_NAME = process.env.BUCKET_NAME;  // 生成されたPDFのアップロード先バケット
+const BUCKET_REGION = process.env.BUCKET_REGION;
 
 // htmlをpdfに変換する
 function convertAsync(html, pdfFileName) {
