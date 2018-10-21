@@ -6,9 +6,10 @@ const moment = require('moment');
 const path = require('path');
 const pdf = require('html-pdf');
 
-const CACHE_DIR = '/tmp/fonts-cache';
-const BUCKET_NAME = 'aoyama.vallab.ninja';
+const BUCKET_NAME = 'aoyama.vallab.ninja';  // 生成されたPDFのアップロード先バケット
+const BUCKET_REGION = 'ap-northeast-1';
 
+// htmlをpdfに変換する
 function convertAsync(html, pdfFileName) {
     return new Promise(function(resolve, reject) {
         var options = {
@@ -28,12 +29,20 @@ function convertAsync(html, pdfFileName) {
     });
 }
 
+// エントリポイント
 exports.handler = (event, context, callback) => {
+    // fontconfigの設定ファイルがあるディレクトリを指定
     process.env['FONTCONFIG_PATH'] = '/var/task/fonts';
 
     console.log('process.cwd =', process.cwd());
+
+    // キャッシュディレクトリ作成
+    var tmpDir = mktemp.createDirSync('/tmp/XXXXXXXXX');
+    console.log('tmpDir', tmpDir);
+    const CACHE_DIR = tmpDir + '/fonts-cache';   // fontconfigのキャッシュディレクトリ
     fs.mkdirSync(CACHE_DIR);
 
+    // フォントキャッシュ作成
     exec('fc-cache -v /var/task/fonts', function(err, stdout, stderr) {
         if (err) {
             console.error(err);
@@ -49,15 +58,14 @@ exports.handler = (event, context, callback) => {
             }
             console.log(stdout);
 
-            var tmpDir = mktemp.createDirSync('/tmp/XXXXXXXXX');
-            console.log('tmpDir', tmpDir);
-
             var html = '<div>abc あいうえお def</div>';
-            var pdfFileName = tmpDir + moment().format('YYYYMMDD_HHmmss') + '.pdf';
+            var pdfFileName = tmpDir + '/' + moment().format('YYYYMMDD_HHmmss') + '.pdf';
             convertAsync(html, pdfFileName)
             .then(function(result) {
                 console.log('result', result);
-                AWS.config.update({ region: 'ap-northeast-1' });
+
+                // 生成されたPDFファイルをS3にアップロード
+                AWS.config.update({ region: BUCKET_REGION });
                 var s3 = new AWS.S3();
                 var now = moment();
                 var key = 'pdf/' + path.basename(pdfFileName);
@@ -70,7 +78,7 @@ exports.handler = (event, context, callback) => {
                 s3.putObject(params).promise()
                 .then(function() {
                     context.succeed({
-                        pdfUrl: `https://s3-ap-northeast-1.amazonaws.com/${BUCKET_NAME}/${key}`
+                        pdfUrl: `https://s3-${BUCKET_REGION}.amazonaws.com/${BUCKET_NAME}/${key}`
                     });
                 })
                 .catch(function(err) {
