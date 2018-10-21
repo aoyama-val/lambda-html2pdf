@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "html-pdf": "^2.2.0"
+    "html-pdf": "^2.2.0",
+    "mktemp": "^0.4.0",
+    "moment": "^2.22.2"
   }
 }
