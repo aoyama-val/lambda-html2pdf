@@ -31,6 +31,13 @@ function convertAsync(html, pdfFileName) {
 
 // エントリポイント
 exports.handler = (event, context, callback) => {
+    console.log('event', event);
+    if (!event.html || event.html == '') {
+        context.fail({ message: 'リクエストボディが空です。' });
+        return;
+    }
+    var html = event.html;  // PDFに変換するhtml
+
     // fontconfigの設定ファイルがあるディレクトリを指定
     process.env['FONTCONFIG_PATH'] = '/var/task/fonts';
 
@@ -46,19 +53,18 @@ exports.handler = (event, context, callback) => {
     exec('fc-cache -v /var/task/fonts', function(err, stdout, stderr) {
         if (err) {
             console.error(err);
-            context.fail('NG');
+            context.fail({ message: 'フォントキャッシュ作成に失敗しました。' });
             return;
         }
 
         exec('find /tmp -print', function(err, stdout, stderr) {
             if (err) {
                 console.error(err);
-                context.fail('NG');
+                context.fail({ message: 'findに失敗しました。' });
                 return;
             }
             console.log(stdout);
 
-            var html = '<div>abc あいうえお def</div>';
             var pdfFileName = tmpDir + '/' + moment().format('YYYYMMDD_HHmmss') + '.pdf';
             convertAsync(html, pdfFileName)
             .then(function(result) {
@@ -82,12 +88,12 @@ exports.handler = (event, context, callback) => {
                     });
                 })
                 .catch(function(err) {
-                    context.fail('NG');
+                    context.fail({ message: 'S3へのアップロードに失敗しました。' });
                 });
             })
             .catch(function(err) {
                 console.error(err);
-                context.fail('NG');
+                context.fail({ message: '予期しないエラーが発生しました。' });
             });
         });
     });
