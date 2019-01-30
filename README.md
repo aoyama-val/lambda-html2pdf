@@ -25,7 +25,7 @@ Amazon Linux上で下記を実行します。
 git clone このリポジトリ
 cd このリポジトリ
 npm install
-function_name="さっき作ったLambda関数名" bucket_name="Lambdaのzipパッケージアップロード先S3バケット名" region=ap-northeast-1 ./deploy
+function_name="さっき作ったLambda関数名" ./deploy
 ```
 
 以上でデプロイされます。
